@@ -322,28 +322,31 @@ function analyzeHarmonics(pcs, targetRoot) {
 
         for (let [type, structure] of Object.entries(CHORD_STRUCTURES)) {
             if (structure.every(interval => relativeIntervals.includes(interval))) {
-
-                // RÈGLE ANTI-MAJ7 : Vérifie si des notes étrangères sont présentes
-                const unintended = relativeIntervals.filter(i => !structure.includes(i)).length;
-
+                // Confiance réelle basée sur le nombre de notes trouvées
                 let confidence = structure.length / pcs.length;
-                let priorityScore = confidence * 1000;
-
-                // Pénalité pour les notes en trop (évite maj7 fantôme)
-                priorityScore -= (unintended * 150);
-
-                if (rootNameRaw === cleanTargetRoot) priorityScore += 500;
-                priorityScore += (structure.length * 10);
 
                 results.push({
                     name: NOTES[root] + type,
-                    score: priorityScore,
-                    displayConf: confidence
+                    rootNameRaw: rootNameRaw,
+                    confidence: confidence
                 });
             }
         }
     }
-    return results.sort((a, b) => b.score - a.score);
+
+    // NOUVELLE LOGIQUE DE TRI : Confiance d'abord, tonique seulement en cas d'égalité
+    return results.sort((a, b) => {
+        // 1. Priorité à la confiance la plus forte (ex: 80% bat 60%)
+        if (Math.abs(b.confidence - a.confidence) > 0.001) {
+            return b.confidence - a.confidence;
+        }
+        // 2. Égalité ? On regarde si c'est la tonique attendue (D pour Dm/D7)
+        const aMatch = (a.rootNameRaw === cleanTargetRoot);
+        const bMatch = (b.rootNameRaw === cleanTargetRoot);
+        if (aMatch !== bMatch) return bMatch ? 1 : -1;
+
+        return 0;
+    });
 }
 
 function finish() {
@@ -371,18 +374,15 @@ function finish() {
     const verdictBlockEl = document.getElementById('verdict-block');
     const noteGrid = document.getElementById('note-grid');
 
-    // SI RIEN N'EST TROUVÉ : Affiche "idk" + les carrés de notes
-    if (foundChords.length === 0 || foundChords[0].score < 200) {
+    if (foundChords.length === 0) {
         document.getElementById('detected-name').innerHTML = "idk";
         document.getElementById('confidence-score').innerText = "0";
-
         noteGrid.classList.remove('hidden');
         noteGrid.innerHTML = filteredMidis.map(m => {
             const n = NOTES[m%12].replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
             const oct = Math.floor(m/12)-1;
             return `<div class="note-square">${n}${oct}</div>`;
         }).join('');
-
         verdictTextEl.innerText = "Try again";
         verdictBlockEl.style.background = 'rgba(255, 255, 255, 0.1)';
         return;
@@ -394,7 +394,7 @@ function finish() {
 
     noteGrid.classList.add('hidden');
     document.getElementById('detected-name').innerHTML = formatChordDisplay(best.name);
-    document.getElementById('confidence-score').innerText = Math.round(best.displayConf * 100);
+    document.getElementById('confidence-score').innerText = Math.round(best.confidence * 100);
 
     if (win) {
         verdictTextEl.innerText = "That's right !";
