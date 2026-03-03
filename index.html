@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Piano Trainer - Smart Trigger</title>
 <style>
     :root {
@@ -24,6 +24,7 @@
         overflow: hidden;
     }
 
+    /* Structure originale */
     .app-card {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(12px);
@@ -41,11 +42,51 @@
         box-sizing: border-box;
     }
 
+    /* Adaptation mobile */
+    @media (max-width: 768px) {
+        .app-card {
+            width: 95%;
+            padding: 30px 20px;
+            min-height: auto;
+            gap: 15px;
+        }
+
+        #target-chord {
+            font-size: 3.5em !important;
+        }
+
+        .action-zone {
+            top: 20px !important;
+            padding-top: 20px !important;
+        }
+
+        .result-area {
+            margin-top: 0 !important;
+            gap: 20px !important;
+        }
+
+        .verdict-block {
+            padding: 15px 20px !important;
+            width: 90% !important;
+        }
+
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+            gap: 10px !important;
+        }
+
+        .main-btn, .retry-btn {
+            width: 100%;
+            padding: 15px 30px !important;
+        }
+    }
+
     .target-container {
         display: flex;
         justify-content: center;
-        align-items: flex-end; /* Aligne le bouton sur le bas du texte */
-        gap: 15px; /* Espace entre le texte et le bouton */
+        align-items: flex-end;
+        gap: 15px;
         width: 100%;
         min-height: 100px;
     }
@@ -56,19 +97,17 @@
         margin: 0;
         margin-left: -3px;
         text-shadow: 2px 4px 10px rgba(0,0,0,0.2);
-        line-height: 0.9; /* Pour coller le bouton au plus près de la base des lettres */
+        line-height: 0.9;
         transform: translateX(-2px);
     }
 
-
     #target-chord span, #detected-name span {
         font-style: italic;
-        font-weight: 300; /* Plus fin pour contraster avec la note grasse */
+        font-weight: 300;
         opacity: 0.9;
-        font-size: 0.8em; /* Un peu plus petit pour l'équilibre visuel */
+        font-size: 0.8em;
         margin-left: 2px;
     }
-
 
     .button-regen {
         position: relative;
@@ -81,7 +120,7 @@
         transition: all 150ms, opacity 0.3s ease;
         background: transparent;
         cursor: pointer;
-        margin-bottom: 5px; /* Ajustement fin pour l'alignement visuel */
+        margin-bottom: 5px;
         flex-shrink: 0;
     }
 
@@ -90,17 +129,13 @@
         content: "f5";
         inset: 0;
         display: flex;
-
         justify-content: flex-end;
         align-items: flex-start;
-
-
         padding-top: 2px;
         padding-right: 3px;
-
         color: #ffffff;
         font-weight: bold;
-        font-size: 0.7em; /* Un peu plus petit pour que ça rentre bien dans le coin */
+        font-size: 0.7em;
     }
 
     .button-regen:active {
@@ -119,7 +154,6 @@
         position: relative;
         top: 80px;
         z-index: 10;
-        /* On s'assure que la zone d'action ignore les décalages du titre */
         left: 0;
         right: 0;
         margin-left: auto;
@@ -198,7 +232,7 @@
     .spacer-ghost {
         width: calc(1.8em + 2px);
         flex-shrink: 0;
-        visibility: hidden; /* Il est là, mais on ne le voit pas */
+        visibility: hidden;
     }
 
     .verdict-block {
@@ -210,15 +244,9 @@
         text-align: center;
     }
 
-    .invisible {
-        opacity: 0 !important;
-        pointer-events: none !important; /* Désactive les clics */
-        cursor: default !important;
-    }
-
-
     .verdict { font-size: 2.8em; font-weight: 900; margin: 10px 0; }
     .hidden { display: none !important; }
+    .invisible { opacity: 0 !important; pointer-events: none !important; cursor: default !important; }
 </style>
 </head>
 <body>
@@ -233,7 +261,6 @@
         <button id="btn-listen" class="main-btn">Play</button>
 
         <div id="container-waiting" class="hidden">
-
             <div class="loading-wave" id="wave-ui">
                 <div class="loading-bar" id="b1"></div>
                 <div class="loading-bar" id="b2"></div>
@@ -257,7 +284,7 @@
                 <div style="font-size: 1.2em;">I heard : <b id="detected-name">-</b> (<span id="confidence-score">0</span>%)</div>
                 <div id="verdict-text" class="verdict"></div>
             </div>
-            <div style="display: flex; gap: 20px;">
+            <div style="display: flex; gap: 20px;" class="btn-group-mobile">
                 <button class="retry-btn" id="btn-retry">New chord</button>
                 <button class="retry-btn" id="btn-re-attempt">Retry chord</button>
             </div>
@@ -268,17 +295,17 @@
 <script>
 const NOTES = ["C", "C&#9839;", "D", "E&flat;", "E", "F", "F&#9839;", "G", "G&#9839;", "A", "B&flat;", "B"];
 const CHORD_TYPES = {
-    "": [0, 4, 7],         // Majeur
-    "m": [0, 3, 7],        // Mineur
-    "7": [0, 4, 7, 10],    // 7ème
-    "maj7": [0, 4, 7, 11], // Maj7
-    "m7": [0, 3, 7, 10],   // m7
+    "": [0, 4, 7],
+    "m": [0, 3, 7],
+    "7": [0, 4, 7, 10],
+    "Maj7": [0, 4, 7, 11],
+    "m7": [0, 3, 7, 10],
     "m(Maj7)": [0, 3, 7, 11],
-    "add9": [0, 4, 7, 2],  // La 9ème est vue comme une 2nde (2 % 12)
+    "add9": [0, 4, 7, 2],
     "sus4": [0, 5, 7],
-    "m(Maj9)": [0, 3, 7, 10, 2], // Corrigé pour inclure la 7ème mineure et la 9ème
-    "dim": [0, 3, 6],      // Ajout : Diminué
-    "aug": [0, 4, 8]       // Ajout : Augmenté
+    "m(Maj9)": [0, 3, 7, 11, 2],
+    "dim": [0, 3, 6],
+    "aug": [0, 4, 8]
 };
 
 let targetChordName = "";
@@ -294,7 +321,6 @@ function getRandomChord() {
         const types = Object.keys(CHORD_TYPES);
         const type = types[Math.floor(Math.random() * types.length)];
         newChord = note + type;
-        // On nettoie le nom pour la comparaison logique interne
         newRawName = newChord.replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
     } while (newRawName === targetChordName);
 
@@ -396,41 +422,39 @@ function finish() {
     const filteredMidis = Object.keys(midiAccumulator).filter(m => midiAccumulator[m] > maxVal * 0.45).map(Number);
     const chords = analyzeChords(filteredMidis);
 
-    // Préparation des notes détectées sous forme de petits carrés
-    // On remplace &flat; par le vrai caractère ♭ pour l'affichage
-    const uniqueNotesHTML = [...new Set(filteredMidis.map(m => NOTES[m % 12].replace('&flat;', '♭')))]
+    const uniqueNotesHTML = [...new Set(filteredMidis.map(m => NOTES[m % 12].replace(/&flat;|&#9839;/g, (m) => m === '&flat;' ? '♭' : '♯')))]
         .map(note => `<span style="display:inline-block; background:rgba(255,255,255,0.2); border-radius:6px; padding:5px 10px; margin:3px; font-size:0.4em; font-weight:600; min-width:30px;">${note}</span>`)
         .join("");
 
     const verdictTextEl = document.getElementById('verdict-text');
     const verdictBlockEl = document.getElementById('verdict-block');
 
-    // Cas où l'accord est inconnu
     if (chords.length === 0) {
         document.getElementById('detected-name').innerHTML = "idk";
         document.getElementById('confidence-score').innerText = "0";
-        verdictTextEl.innerHTML = uniqueNotesHTML; // On insère les carrés
+        verdictTextEl.innerHTML = uniqueNotesHTML;
         verdictTextEl.style.color = "white";
-        verdictBlockEl.style.background = 'rgba(255, 255, 255, 0.15)'; // Fond gris/blanc
+        verdictBlockEl.style.background = 'rgba(255, 255, 255, 0.15)';
         return;
     }
 
+    const simplify = (name) => name.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").replace(/♭/g, "b").replace(/♯/g, "#");
+    const cleanTarget = simplify(targetChordName);
     const bestScore = chords[0].score;
-    const isTargetInBestMatches = chords.some(c => {
-        const cleanName = c.name.replace("E&flat;", "Eb").replace("B&flat;", "Bb");
-        return c.score === bestScore && cleanName === targetChordName;
-    });
+
+    const matchingTarget = chords.find(c =>
+        c.score === bestScore && simplify(c.name) === cleanTarget
+    );
 
     let best;
     let win = false;
 
-    if (isTargetInBestMatches) {
-        best = chords.find(c => c.name.replace("E&flat;", "Eb").replace("B&flat;", "Bb") === targetChordName);
+    if (matchingTarget) {
+        best = matchingTarget;
         win = true;
     } else {
         best = chords[0];
-        const cleanDetected = best.name.replace("E&flat;", "Eb").replace("B&flat;", "Bb");
-        win = (cleanDetected === targetChordName);
+        win = (simplify(best.name) === cleanTarget);
     }
 
     document.getElementById('detected-name').innerHTML = formatChordDisplay(best.name);
@@ -448,46 +472,31 @@ function finish() {
 }
 
 function analyzeChords(allMidis) {
-    // On convertit toutes les notes entendues en "Pitch Classes" (0 à 11)
-    // On garde un Set pour ne pas compter les doublons d'octaves
     const uniquePCs = [...new Set(allMidis.map(m => m % 12))];
-
-    // On identifie la note la plus grave (la basse réelle) pour aider au score
     const lowestNote = Math.min(...allMidis);
     const lowestPC = lowestNote % 12;
 
     let results = [];
 
-    // On teste chaque note de la gamme comme racine potentielle (Root)
     NOTES.forEach((noteName, root) => {
         for (let type in CHORD_TYPES) {
             let intervals = CHORD_TYPES[type];
-
-            // On calcule les notes théoriques de l'accord pour cette racine
-            // Exemple : Pour C Major, on veut [0, 4, 7]
             let targetNotes = intervals.map(inter => (root + inter) % 12);
+            let isMatch = targetNotes.every(tn => uniquePCs.includes(tn));
 
-            // Vérification : est-ce que TOUTES les notes de l'accord sont présentes dans ce qu'on entend ?
-            let match = targetNotes.every(tn => uniquePCs.includes(tn));
-
-            if (match) {
-                // Calcul de la confiance basé sur le nombre de notes trouvées par rapport au total
-                let coverage = targetNotes.length / uniquePCs.length;
-                let confidence = Math.min(Math.round(coverage * 100), 100);
-
-                // Bonus de score si la basse jouée correspond à la racine de l'accord
-                let score = confidence + (root === lowestPC ? 500 : 0);
+            if (isMatch) {
+                let precision = targetNotes.length / uniquePCs.length;
+                let score = (targetNotes.length * 100) + (root === lowestPC ? 500 : 0) + (precision * 50);
 
                 results.push({
                     name: NOTES[root] + type,
-                    confidence: confidence,
+                    confidence: Math.min(Math.round(precision * 100), 100),
                     score: score
                 });
             }
         }
     });
 
-    // On trie par score (le plus probable en premier)
     return results.sort((a, b) => b.score - a.score);
 }
 
@@ -496,12 +505,10 @@ document.getElementById('btn-retry').onclick = () => resetUI(true);
 document.getElementById('btn-refresh').onclick = getRandomChord;
 document.getElementById('btn-re-attempt').onclick = () => resetUI(false);
 
-// Cette fonction sépare la note du type et met le type dans un span
 function formatChordDisplay(chordName) {
     let notePart = "";
     let typePart = "";
 
-    // On vérifie si la note contient un dièse ou un bémol HTML
     if (chordName.includes('&#9839;')) {
         notePart = chordName.substring(0, chordName.indexOf('&#9839;') + 7);
         typePart = chordName.substring(chordName.indexOf('&#9839;') + 7);
@@ -509,63 +516,19 @@ function formatChordDisplay(chordName) {
         notePart = chordName.substring(0, chordName.indexOf('&flat;') + 6);
         typePart = chordName.substring(chordName.indexOf('&flat;') + 6);
     } else {
-        // Note simple (C, D, E...)
         notePart = chordName.substring(0, 1);
         typePart = chordName.substring(1);
+    }
+
+    if (typePart.startsWith('m')) {
+        notePart += 'm';
+        typePart = typePart.substring(1);
     }
 
     return typePart ? `${notePart}<span>${typePart}</span>` : notePart;
 }
 
 getRandomChord();
-
-/*
-(function() {
-    // Création du panneau de debug
-    const debugPanel = document.createElement('div');
-    debugPanel.style = "position:fixed; top:10px; left:10px; background:rgba(0,0,0,0.8); color:#0f0; padding:15px; font-family:monospace; z-index:10000; border-radius:8px; font-size:12px; line-height:1.5; pointer-events:none;";
-    document.body.appendChild(debugPanel);
-
-    function checkAlignment() {
-        const card = document.querySelector('.app-card');
-        if (!card) return;
-
-        const cardRect = card.getBoundingClientRect();
-        const cardCenterX = cardRect.left + (cardRect.width / 2);
-
-        // Liste des éléments à surveiller
-        const elements = {
-            "Accord (H1)": "#target-chord",
-            "Bouton Jouer": "#btn-listen",
-            "Loader Vagues": "#container-waiting",
-            "Loader Flux": "#container-analyzing",
-            "Zone Résultat": "#result-zone"
-        };
-
-        let html = `<b>DEBUG CENTRAGE (Offset / Centre Carte)</b><br>---<br>`;
-
-        for (let [name, selector] of Object.entries(elements)) {
-            const el = document.querySelector(selector);
-            if (el && !el.classList.contains('hidden')) {
-                const rect = el.getBoundingClientRect();
-                const elCenterX = rect.left + (rect.width / 2);
-                const offset = Math.round(elCenterX - cardCenterX);
-
-                let color = offset === 0 ? "#0f0" : (Math.abs(offset) < 2 ? "#ff0" : "#f44");
-                html += `${name}: <span style="color:${color}">${offset}px</span> ${offset > 0 ? '➡️' : (offset < 0 ? '⬅️' : '🎯')}<br>`;
-            } else {
-                html += `${name}: <span style="color:#666">Masqué</span><br>`;
-            }
-        }
-
-        debugPanel.innerHTML = html;
-        requestAnimationFrame(checkAlignment);
-    }
-
-    checkAlignment();
-})();
-*/
-
 </script>
 </body>
 </html>
