@@ -360,7 +360,7 @@ function finish() {
     }
 
     const maxWeight = Math.max(...Object.values(midiAccumulator));
-    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.30);
+    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.45);
     const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
     // Extraction propre de la racine cible
@@ -429,3 +429,4 @@ getRandomChord();
 </script>
 </body>
 </html>
+
