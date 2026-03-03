@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Piano Trainer - Smart Trigger</title>
+<title>Chords Training</title>
 <style>
     :root {
         --royal-blue: #1e3799;
@@ -50,36 +50,12 @@
             min-height: auto;
             gap: 15px;
         }
-
-        #target-chord {
-            font-size: 3.5em !important;
-        }
-
-        .action-zone {
-            top: 20px !important;
-            padding-top: 20px !important;
-        }
-
-        .result-area {
-            margin-top: 0 !important;
-            gap: 20px !important;
-        }
-
-        .verdict-block {
-            padding: 15px 20px !important;
-            width: 90% !important;
-        }
-
-        .btn-group-mobile {
-            flex-direction: column;
-            width: 100%;
-            gap: 10px !important;
-        }
-
-        .main-btn, .retry-btn {
-            width: 100%;
-            padding: 15px 30px !important;
-        }
+        #target-chord { font-size: 3.5em !important; }
+        .action-zone { top: 20px !important; padding-top: 20px !important; }
+        .result-area { margin-top: 0 !important; gap: 20px !important; }
+        .verdict-block { padding: 15px 20px !important; width: 90% !important; }
+        .btn-group-mobile { flex-direction: column; width: 100%; gap: 10px !important; }
+        .main-btn, .retry-btn { width: 100%; padding: 15px 30px !important; }
     }
 
     .target-container {
@@ -111,8 +87,7 @@
 
     .button-regen {
         position: relative;
-        width: 1.8em;
-        height: 1.8em;
+        width: 1.8em; height: 1.8em;
         transform: rotateX(30deg);
         border-radius: 0.2em;
         border: 1px solid #ffffff;
@@ -125,17 +100,10 @@
     }
 
     .button-regen::after {
-        position: absolute;
-        content: "f5";
-        inset: 0;
-        display: flex;
-        justify-content: flex-end;
-        align-items: flex-start;
-        padding-top: 2px;
-        padding-right: 3px;
-        color: #ffffff;
-        font-weight: bold;
-        font-size: 0.7em;
+        position: absolute; content: "f5"; inset: 0;
+        display: flex; justify-content: flex-end; align-items: flex-start;
+        padding-top: 2px; padding-right: 3px;
+        color: #ffffff; font-weight: bold; font-size: 0.7em;
     }
 
     .button-regen:active {
@@ -144,106 +112,38 @@
     }
 
     .action-zone {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 15px;
-        padding-top: 40px;
-        position: relative;
-        top: 80px;
-        z-index: 10;
-        left: 0;
-        right: 0;
-        margin-left: auto;
-        margin-right: auto;
+        width: 100%; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; gap: 15px;
+        padding-top: 40px; position: relative; top: 80px; z-index: 10;
+        left: 0; right: 0; margin-left: auto; margin-right: auto;
     }
 
     .main-btn, .retry-btn {
-        background: transparent;
-        color: white;
-        border: 2.5px solid white;
-        padding: 18px 50px;
-        border-radius: 50px;
-        font-size: 1.2em;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.3s;
+        background: transparent; color: white; border: 2.5px solid white;
+        padding: 18px 50px; border-radius: 50px; font-size: 1.2em;
+        font-weight: bold; cursor: pointer; transition: 0.3s;
     }
 
-    .main-btn:hover, .retry-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        transform: scale(1.05);
-    }
+    .main-btn:hover, .retry-btn:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.05); }
 
     .loading-wave {
-        width: 100%;
-        height: 70px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-end;
-        gap: 8px;
-        opacity: 0.2;
-        transition: opacity 0.3s ease;
+        width: 100%; height: 70px; display: flex;
+        justify-content: center; align-items: flex-end; gap: 8px;
+        opacity: 0.2; transition: opacity 0.3s ease;
     }
-
     .loading-wave.active { opacity: 1; }
+    .loading-bar { width: 22px; height: 10px; background-color: white; border-radius: 5px; transition: height 0.05s ease-out; }
 
-    .loading-bar {
-        width: 22px;
-        height: 10px;
-        background-color: white;
-        border-radius: 5px;
-        transition: height 0.05s ease-out;
-    }
-
-    .loader-flow {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 60px;
-        position: relative;
-    }
-    .flow-item {
-        position: absolute;
-        height: 4px; width: 80px; background: white; border-radius: 10px;
-        animation: flow_anim 2s infinite; opacity: 0;
-    }
+    .loader-flow { display: flex; justify-content: center; align-items: center; height: 60px; position: relative; }
+    .flow-item { position: absolute; height: 4px; width: 80px; background: white; border-radius: 10px; animation: flow_anim 2s infinite; opacity: 0; }
     .f1 { animation-delay: 0.1s; position: relative; }
     .f2 { animation-delay: 0.3s; }
     .f3 { animation-delay: 0.5s; }
+    @keyframes flow_anim { 0%, 100% { transform: translateY(15px); opacity: 0.2; } 50% { transform: translateY(-15px); opacity: 1; } }
 
-    @keyframes flow_anim {
-        0%, 100% { transform: translateY(15px); opacity: 0.2; }
-        50% { transform: translateY(-15px); opacity: 1; }
-    }
-
-    .result-area {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 40px;
-        margin-top: -80px
-    }
-
-    .spacer-ghost {
-        width: calc(1.8em + 2px);
-        flex-shrink: 0;
-        visibility: hidden;
-    }
-
-    .verdict-block {
-        padding: 20px 40px;
-        border-radius: 15px;
-        background: rgba(255, 255, 255, 0.1);
-        width: 100%;
-        max-width: 450px;
-        text-align: center;
-    }
-
+    .result-area { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; margin-top: -80px }
+    .spacer-ghost { width: calc(1.8em + 2px); flex-shrink: 0; visibility: hidden; }
+    .verdict-block { padding: 20px 40px; border-radius: 15px; background: rgba(255, 255, 255, 0.1); width: 100%; max-width: 450px; text-align: center; }
     .verdict { font-size: 2.8em; font-weight: 900; margin: 10px 0; }
     .hidden { display: none !important; }
     .invisible { opacity: 0 !important; pointer-events: none !important; cursor: default !important; }
@@ -294,16 +194,17 @@
 
 <script>
 const NOTES = ["C", "C&#9839;", "D", "E&flat;", "E", "F", "F&#9839;", "G", "G&#9839;", "A", "B&flat;", "B"];
-const CHORD_TYPES = {
+const CHORD_STRUCTURES = {
     "": [0, 4, 7],
     "m": [0, 3, 7],
     "7": [0, 4, 7, 10],
-    "Maj7": [0, 4, 7, 11],
+    "maj7": [0, 4, 7, 11],
     "m7": [0, 3, 7, 10],
-    "m(Maj7)": [0, 3, 7, 11],
+    "6": [0, 4, 7, 9],
     "add9": [0, 4, 7, 2],
+    "maj9": [0, 4, 7, 11, 2],
+    "m9": [0, 3, 7, 10, 2],
     "sus4": [0, 5, 7],
-    "m(Maj9)": [0, 3, 7, 11, 2],
     "dim": [0, 3, 6],
     "aug": [0, 4, 8]
 };
@@ -311,19 +212,18 @@ const CHORD_TYPES = {
 let targetChordName = "";
 let audioContext, analyser, stream, animationId;
 let midiAccumulator = {};
-const TRIGGER_DB = -40;
+const TRIGGER_DB = -45;
 
 function getRandomChord() {
     let newChord;
     let newRawName;
     do {
         const note = NOTES[Math.floor(Math.random() * NOTES.length)];
-        const types = Object.keys(CHORD_TYPES);
+        const types = Object.keys(CHORD_STRUCTURES);
         const type = types[Math.floor(Math.random() * types.length)];
         newChord = note + type;
         newRawName = newChord.replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
     } while (newRawName === targetChordName);
-
     targetChordName = newRawName;
     document.getElementById('target-chord').innerHTML = formatChordDisplay(newChord);
 }
@@ -336,19 +236,8 @@ function resetUI(withNewChord = false) {
     document.getElementById('container-analyzing').classList.add('hidden');
     document.getElementById('wave-ui').classList.remove('active');
     document.getElementById('btn-refresh').classList.remove('invisible');
-
     if(animationId) cancelAnimationFrame(animationId);
     if(stream) stream.getTracks().forEach(t => t.stop());
-}
-
-function updateWave() {
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(dataArray);
-    document.getElementById('b1').style.height = (10 + (dataArray[15] / 255) * 40) + "px";
-    document.getElementById('b2').style.height = (10 + (dataArray[40] / 255) * 80) + "px";
-    document.getElementById('b3').style.height = (10 + (dataArray[80] / 255) * 80) + "px";
-    document.getElementById('b4').style.height = (10 + (dataArray[120] / 255) * 40) + "px";
-    animationId = requestAnimationFrame(updateWave);
 }
 
 async function startAnalysis() {
@@ -359,10 +248,10 @@ async function startAnalysis() {
 
     try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
         const source = audioContext.createMediaStreamSource(stream);
         analyser = audioContext.createAnalyser();
-        analyser.fftSize = 2048;
+        analyser.fftSize = 4096;
         source.connect(analyser);
         updateWave();
 
@@ -381,25 +270,20 @@ async function startAnalysis() {
             }
 
             if (triggered) {
-                analyser.fftSize = 16384;
                 for (let i = 1; i < data.length - 1; i++) {
-                    if (data[i] > -65 && data[i] > data[i-1] && data[i] > data[i+1]) {
+                    if (data[i] > -60 && data[i] > data[i-1] && data[i] > data[i+1]) {
                         const freq = i * audioContext.sampleRate / analyser.fftSize;
-                        if (freq > 70 && freq < 1200) {
+                        if (freq > 60 && freq < 1100) {
                             const midi = Math.round(12 * Math.log2(freq/440) + 69);
                             midiAccumulator[midi] = (midiAccumulator[midi] || 0) + (data[i] + 100);
                         }
                     }
                 }
-
-                const elapsed = Date.now() - startT;
-                if (elapsed > 2200) {
-                    if (currentVol < TRIGGER_DB - 10 || elapsed > 4500) {
-                        clearInterval(check);
-                        document.getElementById('container-waiting').classList.add('hidden');
-                        document.getElementById('container-analyzing').classList.remove('hidden');
-                        setTimeout(finish, 600);
-                    }
+                if (Date.now() - startT > 2000) {
+                    clearInterval(check);
+                    document.getElementById('container-waiting').classList.add('hidden');
+                    document.getElementById('container-analyzing').classList.remove('hidden');
+                    setTimeout(finish, 500);
                 }
             }
         }, 100);
@@ -412,53 +296,39 @@ function finish() {
     document.getElementById('container-analyzing').classList.add('hidden');
     document.getElementById('result-zone').classList.remove('hidden');
 
-    const values = Object.values(midiAccumulator);
-    if (values.length === 0) {
-        document.getElementById('verdict-text').innerText = "RIEN ENTENDU";
+    const midis = Object.keys(midiAccumulator).map(Number);
+    if (midis.length === 0) {
+        document.getElementById('verdict-text').innerText = "NOTHING HEARD";
         return;
     }
 
-    const maxVal = Math.max(...values);
-    const filteredMidis = Object.keys(midiAccumulator).filter(m => midiAccumulator[m] > maxVal * 0.45).map(Number);
-    const chords = analyzeChords(filteredMidis);
+    const maxWeight = Math.max(...Object.values(midiAccumulator));
+    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.45);
+    const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
-    const uniqueNotesHTML = [...new Set(filteredMidis.map(m => NOTES[m % 12].replace(/&flat;|&#9839;/g, (m) => m === '&flat;' ? '♭' : '♯')))]
-        .map(note => `<span style="display:inline-block; background:rgba(255,255,255,0.2); border-radius:6px; padding:5px 10px; margin:3px; font-size:0.4em; font-weight:600; min-width:30px;">${note}</span>`)
-        .join("");
-
+    const foundChords = analyzeHarmonics(pcs);
     const verdictTextEl = document.getElementById('verdict-text');
     const verdictBlockEl = document.getElementById('verdict-block');
 
-    if (chords.length === 0) {
+    if (foundChords.length === 0) {
         document.getElementById('detected-name').innerHTML = "idk";
         document.getElementById('confidence-score').innerText = "0";
-        verdictTextEl.innerHTML = uniqueNotesHTML;
-        verdictTextEl.style.color = "white";
-        verdictBlockEl.style.background = 'rgba(255, 255, 255, 0.15)';
+        verdictTextEl.innerText = "Try again";
         return;
     }
 
-    const simplify = (name) => name.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").replace(/♭/g, "b").replace(/♯/g, "#");
-    const cleanTarget = simplify(targetChordName);
-    const bestScore = chords[0].score;
+    const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").toLowerCase();
+    const targetClean = simplify(targetChordName);
 
-    const matchingTarget = chords.find(c =>
-        c.score === bestScore && simplify(c.name) === cleanTarget
-    );
+    // On cherche si l'accord cible est parmi les meilleurs résultats (Score Subset)
+    const bestScore = foundChords[0].score;
+    const matchingTarget = foundChords.find(c => c.score === bestScore && simplify(c.name) === targetClean);
 
-    let best;
-    let win = false;
-
-    if (matchingTarget) {
-        best = matchingTarget;
-        win = true;
-    } else {
-        best = chords[0];
-        win = (simplify(best.name) === cleanTarget);
-    }
+    const best = matchingTarget || foundChords[0];
+    const win = simplify(best.name) === targetClean;
 
     document.getElementById('detected-name').innerHTML = formatChordDisplay(best.name);
-    document.getElementById('confidence-score').innerText = best.confidence;
+    document.getElementById('confidence-score').innerText = Math.round(best.score * 100);
 
     if (win) {
         verdictTextEl.innerText = "That's right !";
@@ -471,63 +341,44 @@ function finish() {
     }
 }
 
-function analyzeChords(allMidis) {
-    const uniquePCs = [...new Set(allMidis.map(m => m % 12))];
-    const lowestNote = Math.min(...allMidis);
-    const lowestPC = lowestNote % 12;
-
+function analyzeHarmonics(pcs) {
     let results = [];
-
-    NOTES.forEach((noteName, root) => {
-        for (let type in CHORD_TYPES) {
-            let intervals = CHORD_TYPES[type];
-            let targetNotes = intervals.map(inter => (root + inter) % 12);
-            let isMatch = targetNotes.every(tn => uniquePCs.includes(tn));
-
-            if (isMatch) {
-                let precision = targetNotes.length / uniquePCs.length;
-                let score = (targetNotes.length * 100) + (root === lowestPC ? 500 : 0) + (precision * 50);
-
-                results.push({
-                    name: NOTES[root] + type,
-                    confidence: Math.min(Math.round(precision * 100), 100),
-                    score: score
-                });
+    for (let root = 0; root < 12; root++) {
+        const relativeIntervals = pcs.map(pc => (pc - root + 12) % 12);
+        for (let [type, structure] of Object.entries(CHORD_STRUCTURES)) {
+            if (structure.every(interval => relativeIntervals.includes(interval))) {
+                const coverage = structure.length / pcs.length;
+                results.push({ name: NOTES[root] + type, score: coverage });
             }
         }
-    });
-
+    }
     return results.sort((a, b) => b.score - a.score);
+}
+
+function updateWave() {
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(dataArray);
+    document.getElementById('b1').style.height = (10 + (dataArray[15] / 255) * 40) + "px";
+    document.getElementById('b2').style.height = (10 + (dataArray[40] / 255) * 80) + "px";
+    document.getElementById('b3').style.height = (10 + (dataArray[80] / 255) * 80) + "px";
+    document.getElementById('b4').style.height = (10 + (dataArray[120] / 255) * 40) + "px";
+    animationId = requestAnimationFrame(updateWave);
+}
+
+function formatChordDisplay(name) {
+    let note = name.match(/^[A-G](&#9839;|&flat;)?/)[0];
+    let type = name.replace(note, "");
+    if (type.startsWith('m') && !type.startsWith('maj')) {
+        note += 'm';
+        type = type.substring(1);
+    }
+    return type ? `${note}<span>${type}</span>` : note;
 }
 
 document.getElementById('btn-listen').onclick = startAnalysis;
 document.getElementById('btn-retry').onclick = () => resetUI(true);
-document.getElementById('btn-refresh').onclick = getRandomChord;
 document.getElementById('btn-re-attempt').onclick = () => resetUI(false);
-
-function formatChordDisplay(chordName) {
-    let notePart = "";
-    let typePart = "";
-
-    if (chordName.includes('&#9839;')) {
-        notePart = chordName.substring(0, chordName.indexOf('&#9839;') + 7);
-        typePart = chordName.substring(chordName.indexOf('&#9839;') + 7);
-    } else if (chordName.includes('&flat;')) {
-        notePart = chordName.substring(0, chordName.indexOf('&flat;') + 6);
-        typePart = chordName.substring(chordName.indexOf('&flat;') + 6);
-    } else {
-        notePart = chordName.substring(0, 1);
-        typePart = chordName.substring(1);
-    }
-
-    if (typePart.startsWith('m')) {
-        notePart += 'm';
-        typePart = typePart.substring(1);
-    }
-
-    return typePart ? `${notePart}<span>${typePart}</span>` : notePart;
-}
-
+document.getElementById('btn-refresh').onclick = getRandomChord;
 getRandomChord();
 </script>
 </body>
