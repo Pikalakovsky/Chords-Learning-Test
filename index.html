@@ -302,7 +302,7 @@ function finish() {
 
     const maxWeight = Math.max(...Object.values(midiAccumulator));
     // Sensibilité accrue pour capter les notes faibles (septièmes/neuvièmes)
-    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.30);
+    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.45);
     
     // Identification de la note la plus basse pour prioriser l'inversion correcte (ex: G6 vs Em7)
     const lowestMIDI = Math.min(...filteredMidis);
@@ -401,3 +401,4 @@ getRandomChord();
 </script>
 </body>
 </html>
+
