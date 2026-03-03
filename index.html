@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chords Training</title>
+<title>Chords Training :)</title>
 <style>
     :root {
         --royal-blue: #1e3799;
@@ -298,27 +298,50 @@ function getRootFromChordName(name) {
 }
 
 function analyzeHarmonics(pcs, targetRoot) {
+    if (!pcs || pcs.length === 0) return [];
+
     let results = [];
+
+    // On nettoie la racine cible pour la comparaison (ex: "G&#9839;" -> "G#")
+    const cleanTargetRoot = targetRoot.replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
+
     for (let root = 0; root < 12; root++) {
+        // On nettoie la racine actuelle
         const rootNameRaw = NOTES[root].replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
+
         const relativeIntervals = pcs.map(pc => (pc - root + 12) % 12);
 
         for (let [type, structure] of Object.entries(CHORD_STRUCTURES)) {
+            // Vérifie si l'accord est contenu dans les notes jouées
             if (structure.every(interval => relativeIntervals.includes(interval))) {
-                let score = structure.length / pcs.length;
 
-                // --- LOGIQUE DE PRIORITE ---
-                // Si le score est parfait (1.0), on ajoute un micro-bonus (0.01)
-                // si la fondamentale de cet accord correspond à celle de la cible.
-                if (score >= 0.99 && rootNameRaw === targetRoot) {
-                    score += 0.01;
+                // Calcul de la confiance (0.0 à 1.0)
+                let confidence = structure.length / pcs.length;
+
+                // Système de points interne pour le tri
+                // On multiplie par 1000 pour transformer en entiers
+                let priorityScore = confidence * 1000;
+
+                // --- LA RÈGLE D'OR ---
+                // Si la dominante de cet accord est la même que celle demandée,
+                // on lui donne un bonus massif pour qu'il passe devant les inversions relatives (G6 vs Em7)
+                if (rootNameRaw === cleanTargetRoot) {
+                    priorityScore += 500;
                 }
 
-                results.push({ name: NOTES[root] + type, score: score });
+                // Bonus de complexité (priorise les accords à 4 notes sur 3 notes si tout est parfait)
+                priorityScore += (structure.length * 10);
+
+                results.push({
+                    name: NOTES[root] + type,
+                    score: priorityScore,
+                    displayConf: confidence
+                });
             }
         }
     }
-    // Tri par score décroissant. Le bonus de 0.01 fera passer G6 devant Em7 si la cible est G7.
+
+    // Tri décroissant sur le score de priorité
     return results.sort((a, b) => b.score - a.score);
 }
 
@@ -330,6 +353,8 @@ function finish() {
 
     const midis = Object.keys(midiAccumulator).map(Number);
     if (midis.length === 0) {
+        document.getElementById('detected-name').innerHTML = "-";
+        document.getElementById('confidence-score').innerText = "0";
         document.getElementById('verdict-text').innerText = "NOTHING HEARD";
         return;
     }
@@ -338,8 +363,10 @@ function finish() {
     const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.30);
     const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
-    // On extrait la fondamentale de la cible (ex: G) pour la passer à l'analyse
+    // Extraction propre de la racine cible
     const targetRoot = getRootFromChordName(targetChordName);
+
+    // Lancement de l'analyse
     const foundChords = analyzeHarmonics(pcs, targetRoot);
 
     const verdictTextEl = document.getElementById('verdict-text');
@@ -352,15 +379,16 @@ function finish() {
         return;
     }
 
+    // Le meilleur résultat après application des règles de priorité
     const best = foundChords[0];
+
     const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").toLowerCase();
     const win = simplify(best.name) === simplify(targetChordName);
 
     document.getElementById('detected-name').innerHTML = formatChordDisplay(best.name);
 
-    // On plafonne l'affichage à 100% pour éviter de montrer le bonus de 0.01 à l'utilisateur
-    const displayScore = Math.min(100, Math.round(best.score * 100));
-    document.getElementById('confidence-score').innerText = displayScore;
+    // Affichage de la confiance réelle (pas du score de priorité interne)
+    document.getElementById('confidence-score').innerText = Math.round(best.displayConf * 100);
 
     if (win) {
         verdictTextEl.innerText = "That's right !";
