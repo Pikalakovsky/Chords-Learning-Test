@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piano Trainer - Smart Trigger</title>
+<style>
+    :root {
+        --royal-blue: #1e3799;
+        --accent: #f8c291;
+        --success: #78e08f;
+        --error: #eb2f06;
+    }
+
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--royal-blue);
+        font-family: 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        overflow: hidden;
+    }
+
+    .app-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        padding: 40px 50px;
+        border-radius: 30px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        width: 750px;
+        min-height: 520px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 25px;
+        border: 1px solid rgba(255,255,255,0.15);
+        box-sizing: border-box;
+    }
+
+    .target-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end; /* Aligne le bouton sur le bas du texte */
+        gap: 15px; /* Espace entre le texte et le bouton */
+        width: 100%;
+        min-height: 100px;
+    }
+
+    #target-chord {
+        font-size: 4.5em;
+        font-weight: 900;
+        margin: 0;
+        margin-left: -3px;
+        text-shadow: 2px 4px 10px rgba(0,0,0,0.2);
+        line-height: 0.9; /* Pour coller le bouton au plus près de la base des lettres */
+        transform: translateX(-2px);
+    }
+
+
+    .button-regen {
+        position: relative;
+        width: 1.8em;
+        height: 1.8em;
+        transform: rotateX(30deg);
+        border-radius: 0.2em;
+        border: 1px solid #ffffff;
+        box-shadow: 0 0.2em 0 0.05em #ffffff;
+        transition: all 150ms, opacity 0.3s ease;
+        background: transparent;
+        cursor: pointer;
+        margin-bottom: 5px; /* Ajustement fin pour l'alignement visuel */
+        flex-shrink: 0;
+    }
+
+    .button-regen::after {
+        position: absolute;
+        content: "f5";
+        inset: 0;
+        display: flex;
+
+        justify-content: flex-end;
+        align-items: flex-start;
+
+
+        padding-top: 2px;
+        padding-right: 3px;
+
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 0.7em; /* Un peu plus petit pour que ça rentre bien dans le coin */
+    }
+
+    .button-regen:active {
+        transform: rotateX(30deg) translateY(0.2em);
+        box-shadow: 0 0 0 0 #ffffff;
+    }
+
+    .action-zone {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        padding-top: 40px;
+        position: relative;
+        top: 80px;
+        z-index: 10;
+        /* On s'assure que la zone d'action ignore les décalages du titre */
+        left: 0;
+        right: 0;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .main-btn, .retry-btn {
+        background: transparent;
+        color: white;
+        border: 2.5px solid white;
+        padding: 18px 50px;
+        border-radius: 50px;
+        font-size: 1.2em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .main-btn:hover, .retry-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(1.05);
+    }
+
+    .loading-wave {
+        width: 100%;
+        height: 70px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 8px;
+        opacity: 0.2;
+        transition: opacity 0.3s ease;
+    }
+
+    .loading-wave.active { opacity: 1; }
+
+    .loading-bar {
+        width: 22px;
+        height: 10px;
+        background-color: white;
+        border-radius: 5px;
+        transition: height 0.05s ease-out;
+    }
+
+    .loader-flow {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 60px;
+        position: relative;
+    }
+    .flow-item {
+        position: absolute;
+        height: 4px; width: 80px; background: white; border-radius: 10px;
+        animation: flow_anim 2s infinite; opacity: 0;
+    }
+    .f1 { animation-delay: 0.1s; position: relative; }
+    .f2 { animation-delay: 0.3s; }
+    .f3 { animation-delay: 0.5s; }
+
+    @keyframes flow_anim {
+        0%, 100% { transform: translateY(15px); opacity: 0.2; }
+        50% { transform: translateY(-15px); opacity: 1; }
+    }
+
+    .result-area {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        margin-top: -80px
+    }
+
+    .spacer-ghost {
+        width: calc(1.8em + 2px);
+        flex-shrink: 0;
+        visibility: hidden; /* Il est là, mais on ne le voit pas */
+    }
+
+    .verdict-block {
+        padding: 20px 40px;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        width: 100%;
+        max-width: 450px;
+        text-align: center;
+    }
+
+    .invisible {
+        opacity: 0 !important;
+        pointer-events: none !important; /* Désactive les clics */
+        cursor: default !important;
+    }
+
+
+    .verdict { font-size: 2.8em; font-weight: 900; margin: 10px 0; }
+    .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="app-card">
+    <div class="target-container">
+        <span class="spacer-ghost"></span> <h1 id="target-chord">-</h1>
+        <button class="button-regen" id="btn-refresh" title="Régénérer"></button>
+    </div>
+
+    <div class="action-zone">
+        <button id="btn-listen" class="main-btn">Play</button>
+
+        <div id="container-waiting" class="hidden">
+
+            <div class="loading-wave" id="wave-ui">
+                <div class="loading-bar" id="b1"></div>
+                <div class="loading-bar" id="b2"></div>
+                <div class="loading-bar" id="b3"></div>
+                <div class="loading-bar" id="b4"></div>
+            </div>
+            <p style="margin: 10px 0 0 0; opacity: 0.8; text-align: center;">Listening to your chord...</p>
+        </div>
+
+        <div id="container-analyzing" class="hidden">
+            <div class="loader-flow">
+                <div class="flow-item f1"></div>
+                <div class="flow-item f2"></div>
+                <div class="flow-item f3"></div>
+            </div>
+            <p style="margin: 10px 0 0 0; text-align: center;">Loading...</p>
+        </div>
+
+        <div id="result-zone" class="result-area hidden">
+            <div class="verdict-block" id="verdict-block">
+                <div style="font-size: 1.2em;">I heard : <b id="detected-name">-</b> (<span id="confidence-score">0</span>%)</div>
+                <div id="verdict-text" class="verdict"></div>
+            </div>
+            <button class="retry-btn" id="btn-retry">New chord</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const NOTES = ["C", "C#", "D", "E&flat;", "E", "F", "F#", "G", "G#", "A", "B&flat;", "B"];
+const CHORD_TYPES = {
+    "": [0,4,7], "m": [0,3,7], "7": [0,4,7,10], "maj7": [0,4,7,11],
+    "m7": [0,3,7,10], "m(Maj7)": [0,3,7,11], "add9": [0,4,7,2],
+    "sus4": [0,5,7], "m(Maj9)": [0,3,7,11,14]
+};
+
+let targetChordName = "";
+let audioContext, analyser, stream, animationId;
+let midiAccumulator = {};
+const TRIGGER_DB = -40;
+
+function getRandomChord() {
+    let newChord;
+    let newRawName;
+    do {
+        const note = NOTES[Math.floor(Math.random() * NOTES.length)];
+        const types = Object.keys(CHORD_TYPES);
+        const type = types[Math.floor(Math.random() * types.length)];
+        newChord = note + type;
+        newRawName = newChord.replace("E&flat;", "Eb").replace("B&flat;", "Bb");
+    } while (newRawName === targetChordName);
+
+    targetChordName = newRawName;
+    document.getElementById('target-chord').innerHTML = newChord;
+}
+
+function resetUI(withNewChord = false) {
+    if (withNewChord) getRandomChord();
+    document.getElementById('result-zone').classList.add('hidden');
+    document.getElementById('btn-listen').classList.remove('hidden');
+    document.getElementById('container-waiting').classList.add('hidden');
+    document.getElementById('container-analyzing').classList.add('hidden');
+    document.getElementById('wave-ui').classList.remove('active');
+    document.getElementById('btn-refresh').classList.remove('invisible');
+
+    if(animationId) cancelAnimationFrame(animationId);
+    if(stream) stream.getTracks().forEach(t => t.stop());
+}
+
+function updateWave() {
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(dataArray);
+    document.getElementById('b1').style.height = (10 + (dataArray[15] / 255) * 40) + "px";
+    document.getElementById('b2').style.height = (10 + (dataArray[40] / 255) * 80) + "px";
+    document.getElementById('b3').style.height = (10 + (dataArray[80] / 255) * 80) + "px";
+    document.getElementById('b4').style.height = (10 + (dataArray[120] / 255) * 40) + "px";
+    animationId = requestAnimationFrame(updateWave);
+}
+
+async function startAnalysis() {
+    document.getElementById('btn-refresh').classList.add('invisible');
+    document.getElementById('btn-listen').classList.add('hidden');
+    document.getElementById('container-waiting').classList.remove('hidden');
+    midiAccumulator = {};
+
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } });
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+        source.connect(analyser);
+        updateWave();
+
+        let triggered = false;
+        let startT = 0;
+
+        const check = setInterval(() => {
+            const data = new Float32Array(analyser.frequencyBinCount);
+            analyser.getFloatFrequencyData(data);
+            const currentVol = Math.max(...data);
+
+            if (!triggered && currentVol > TRIGGER_DB) {
+                triggered = true;
+                startT = Date.now();
+                document.getElementById('wave-ui').classList.add('active');
+            }
+
+            if (triggered) {
+                analyser.fftSize = 16384;
+                for (let i = 1; i < data.length - 1; i++) {
+                    if (data[i] > -65 && data[i] > data[i-1] && data[i] > data[i+1]) {
+                        const freq = i * audioContext.sampleRate / analyser.fftSize;
+                        if (freq > 70 && freq < 1200) {
+                            const midi = Math.round(12 * Math.log2(freq/440) + 69);
+                            midiAccumulator[midi] = (midiAccumulator[midi] || 0) + (data[i] + 100);
+                        }
+                    }
+                }
+
+                const elapsed = Date.now() - startT;
+                if (elapsed > 2200) {
+                    if (currentVol < TRIGGER_DB - 10 || elapsed > 4500) {
+                        clearInterval(check);
+                        document.getElementById('container-waiting').classList.add('hidden');
+                        document.getElementById('container-analyzing').classList.remove('hidden');
+                        setTimeout(finish, 600);
+                    }
+                }
+            }
+        }, 100);
+    } catch (e) { resetUI(); }
+}
+
+function finish() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    cancelAnimationFrame(animationId);
+    document.getElementById('container-analyzing').classList.add('hidden');
+    document.getElementById('result-zone').classList.remove('hidden');
+
+    const values = Object.values(midiAccumulator);
+    if (values.length === 0) {
+        document.getElementById('verdict-text').innerText = "RIEN ENTENDU";
+        return;
+    }
+
+    const maxVal = Math.max(...values);
+    const filteredMidis = Object.keys(midiAccumulator).filter(m => midiAccumulator[m] > maxVal * 0.45).map(Number);
+    const chords = analyzeChords(filteredMidis);
+
+    // Préparation des notes détectées sous forme de petits carrés
+    // On remplace &flat; par le vrai caractère ♭ pour l'affichage
+    const uniqueNotesHTML = [...new Set(filteredMidis.map(m => NOTES[m % 12].replace('&flat;', '♭')))]
+        .map(note => `<span style="display:inline-block; background:rgba(255,255,255,0.2); border-radius:6px; padding:5px 10px; margin:3px; font-size:0.4em; font-weight:600; min-width:30px;">${note}</span>`)
+        .join("");
+
+    const verdictTextEl = document.getElementById('verdict-text');
+    const verdictBlockEl = document.getElementById('verdict-block');
+
+    // Cas où l'accord est inconnu
+    if (chords.length === 0) {
+        document.getElementById('detected-name').innerHTML = "idk";
+        document.getElementById('confidence-score').innerText = "0";
+        verdictTextEl.innerHTML = uniqueNotesHTML; // On insère les carrés
+        verdictTextEl.style.color = "white";
+        verdictBlockEl.style.background = 'rgba(255, 255, 255, 0.15)'; // Fond gris/blanc
+        return;
+    }
+
+    const bestScore = chords[0].score;
+    const isTargetInBestMatches = chords.some(c => {
+        const cleanName = c.name.replace("E&flat;", "Eb").replace("B&flat;", "Bb");
+        return c.score === bestScore && cleanName === targetChordName;
+    });
+
+    let best;
+    let win = false;
+
+    if (isTargetInBestMatches) {
+        best = chords.find(c => c.name.replace("E&flat;", "Eb").replace("B&flat;", "Bb") === targetChordName);
+        win = true;
+    } else {
+        best = chords[0];
+        const cleanDetected = best.name.replace("E&flat;", "Eb").replace("B&flat;", "Bb");
+        win = (cleanDetected === targetChordName);
+    }
+
+    document.getElementById('detected-name').innerHTML = best.name;
+    document.getElementById('confidence-score').innerText = best.confidence;
+
+    if (win) {
+        verdictTextEl.innerText = "That's right !";
+        verdictTextEl.style.color = "var(--success)";
+        verdictBlockEl.style.background = 'rgba(120, 224, 143, 0.2)';
+    } else {
+        verdictTextEl.innerText = "Not really...";
+        verdictTextEl.style.color = "var(--error)";
+        verdictBlockEl.style.background = 'rgba(235, 47, 6, 0.2)';
+    }
+}
+
+function analyzeChords(allMidis) {
+    const uniquePCs = [...new Set(allMidis.map(m => m % 12))];
+    const lowestPC = allMidis.length > 0 ? (Math.min(...allMidis) % 12) : null;
+    let results = [];
+
+    uniquePCs.forEach(root => {
+        for(let type in CHORD_TYPES) {
+            let struct = CHORD_TYPES[type];
+            let match = struct.every(interval => uniquePCs.includes((root + interval) % 12));
+            if (match) {
+                let coverage = 0;
+                struct.forEach(interval => {
+                    coverage += allMidis.filter(m => (m % 12) === (root + interval) % 12).length;
+                });
+                let confidence = Math.min(Math.round((coverage / allMidis.length) * 100), 100);
+                let score = confidence + (root === lowestPC ? 500 : 0);
+                results.push({ name: NOTES[root] + type, confidence, score });
+            }
+        }
+    });
+    return results.sort((a,b) => b.score - a.score);
+}
+
+document.getElementById('btn-listen').onclick = startAnalysis;
+document.getElementById('btn-retry').onclick = () => resetUI(true);
+document.getElementById('btn-refresh').onclick = getRandomChord;
+
+getRandomChord();
+
+/*
+(function() {
+    // Création du panneau de debug
+    const debugPanel = document.createElement('div');
+    debugPanel.style = "position:fixed; top:10px; left:10px; background:rgba(0,0,0,0.8); color:#0f0; padding:15px; font-family:monospace; z-index:10000; border-radius:8px; font-size:12px; line-height:1.5; pointer-events:none;";
+    document.body.appendChild(debugPanel);
+
+    function checkAlignment() {
+        const card = document.querySelector('.app-card');
+        if (!card) return;
+
+        const cardRect = card.getBoundingClientRect();
+        const cardCenterX = cardRect.left + (cardRect.width / 2);
+
+        // Liste des éléments à surveiller
+        const elements = {
+            "Accord (H1)": "#target-chord",
+            "Bouton Jouer": "#btn-listen",
+            "Loader Vagues": "#container-waiting",
+            "Loader Flux": "#container-analyzing",
+            "Zone Résultat": "#result-zone"
+        };
+
+        let html = `<b>DEBUG CENTRAGE (Offset / Centre Carte)</b><br>---<br>`;
+
+        for (let [name, selector] of Object.entries(elements)) {
+            const el = document.querySelector(selector);
+            if (el && !el.classList.contains('hidden')) {
+                const rect = el.getBoundingClientRect();
+                const elCenterX = rect.left + (rect.width / 2);
+                const offset = Math.round(elCenterX - cardCenterX);
+
+                let color = offset === 0 ? "#0f0" : (Math.abs(offset) < 2 ? "#ff0" : "#f44");
+                html += `${name}: <span style="color:${color}">${offset}px</span> ${offset > 0 ? '➡️' : (offset < 0 ? '⬅️' : '🎯')}<br>`;
+            } else {
+                html += `${name}: <span style="color:#666">Masqué</span><br>`;
+            }
+        }
+
+        debugPanel.innerHTML = html;
+        requestAnimationFrame(checkAlignment);
+    }
+
+    checkAlignment();
+})();
+*/
+
+</script>
+</body>
+</html>
