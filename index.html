@@ -24,6 +24,7 @@
         overflow: hidden;
     }
 
+    /* Structure originale */
     .app-card {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(12px);
@@ -41,6 +42,7 @@
         box-sizing: border-box;
     }
 
+    /* Adaptation mobile */
     @media (max-width: 768px) {
         .app-card {
             width: 95%;
@@ -301,16 +303,10 @@ function finish() {
     }
 
     const maxWeight = Math.max(...Object.values(midiAccumulator));
-    // Sensibilité accrue pour capter les notes faibles (septièmes/neuvièmes)
-    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.45);
-    
-    // Identification de la note la plus basse pour prioriser l'inversion correcte (ex: G6 vs Em7)
-    const lowestMIDI = Math.min(...filteredMidis);
-    const lowestPC = lowestMIDI % 12;
-
+    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.30);
     const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
-    const foundChords = analyzeHarmonics(pcs, lowestPC);
+    const foundChords = analyzeHarmonics(pcs);
     const verdictTextEl = document.getElementById('verdict-text');
     const verdictBlockEl = document.getElementById('verdict-block');
 
@@ -324,7 +320,7 @@ function finish() {
     const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").toLowerCase();
     const targetClean = simplify(targetChordName);
 
-    // On cherche l'accord cible avec le meilleur score
+    // On cherche si l'accord cible est parmi les meilleurs résultats (Score Subset)
     const bestScore = foundChords[0].score;
     const matchingTarget = foundChords.find(c => c.score === bestScore && simplify(c.name) === targetClean);
 
@@ -332,8 +328,7 @@ function finish() {
     const win = simplify(best.name) === targetClean;
 
     document.getElementById('detected-name').innerHTML = formatChordDisplay(best.name);
-    // On affiche la confiance basée sur la couverture réelle (0-100%)
-    document.getElementById('confidence-score').innerText = Math.round(best.coverage * 100);
+    document.getElementById('confidence-score').innerText = Math.round(best.score * 100);
 
     if (win) {
         verdictTextEl.innerText = "That's right !";
@@ -347,30 +342,50 @@ function finish() {
 }
 
 function analyzeHarmonics(pcs, lowestPC) {
-    let results = [];
+    let candidates = [];
+
+    // ÉTAPE 1 : Trouver tous les accords dont les notes sont présentes
     for (let root = 0; root < 12; root++) {
         const relativeIntervals = pcs.map(pc => (pc - root + 12) % 12);
+        
         for (let [type, structure] of Object.entries(CHORD_STRUCTURES)) {
-            // Logique issubset (Python style)
             if (structure.every(interval => relativeIntervals.includes(interval))) {
+                // On stocke la couverture (confiance)
                 const coverage = structure.length / pcs.length;
-                
-                // --- LOGIQUE DE POINTAGE ---
-                // 1. Bonus de complexité : Un accord de 5 notes (m9) bat un accord de 3 notes (m)
-                const complexityBonus = structure.length * 10;
-                // 2. Bonus de Basse : Si la fondamentale est la note la plus basse (ex: G pour G6)
-                const bassBonus = (root === lowestPC) ? 50 : 0;
-                
-                results.push({ 
-                    name: NOTES[root] + type, 
-                    score: coverage + complexityBonus + bassBonus,
-                    coverage: coverage // Pour affichage utilisateur
+                candidates.push({
+                    name: NOTES[root] + type,
+                    root: root,
+                    coverage: coverage,
+                    size: structure.length
                 });
             }
         }
     }
-    // Tri par score total décroissant
-    return results.sort((a, b) => b.score - a.score);
+
+    if (candidates.length === 0) return [];
+
+    // ÉTAPE 2 : Trouver le score de couverture maximum
+    const maxCoverage = Math.max(...candidates.map(c => c.coverage));
+    
+    // ÉTAPE 3 : Filtrer pour ne garder que les meilleurs (ex: G6 et Em7 à 1.0)
+    let topChords = candidates.filter(c => c.coverage === maxCoverage);
+
+    // ÉTAPE 4 : S'il y a égalité, on tranche
+    if (topChords.length > 1) {
+        topChords.forEach(c => {
+            // Bonus de Basse : +10 si la fondamentale est la basse
+            if (c.root === lowestPC) c.tieBreaker = 10;
+            else c.tieBreaker = 0;
+
+            // Bonus de Complexité : +2 par note (priorise Dm7 sur Dm)
+            c.tieBreaker += (c.size * 2);
+        });
+
+        // On trie par le tieBreaker
+        topChords.sort((a, b) => b.tieBreaker - a.tieBreaker);
+    }
+
+    return topChords;
 }
 
 function updateWave() {
@@ -401,5 +416,3 @@ getRandomChord();
 </script>
 </body>
 </html>
-
-
