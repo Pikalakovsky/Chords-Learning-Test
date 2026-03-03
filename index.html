@@ -303,7 +303,7 @@ function finish() {
     }
 
     const maxWeight = Math.max(...Object.values(midiAccumulator));
-    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.45);
+    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.30);
     const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
     const foundChords = analyzeHarmonics(pcs);
@@ -383,3 +383,4 @@ getRandomChord();
 </script>
 </body>
 </html>
+
