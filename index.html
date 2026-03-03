@@ -359,7 +359,7 @@ function analyzeHarmonics(pcs, lowestPC) {
                 // 1. Bonus de complexité : Un accord de 5 notes (m9) bat un accord de 3 notes (m)
                 const complexityBonus = structure.length * 10;
                 // 2. Bonus de Basse : Si la fondamentale est la note la plus basse (ex: G pour G6)
-                const bassBonus = (root === lowestPC) ? 25 : 0;
+                const bassBonus = (root === lowestPC) ? 50 : 0;
                 
                 results.push({ 
                     name: NOTES[root] + type, 
@@ -401,4 +401,5 @@ getRandomChord();
 </script>
 </body>
 </html>
+
 
