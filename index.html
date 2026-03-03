@@ -24,7 +24,6 @@
         overflow: hidden;
     }
 
-    /* Structure originale */
     .app-card {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(12px);
@@ -42,7 +41,6 @@
         box-sizing: border-box;
     }
 
-    /* Adaptation mobile */
     @media (max-width: 768px) {
         .app-card {
             width: 95%;
@@ -303,10 +301,16 @@ function finish() {
     }
 
     const maxWeight = Math.max(...Object.values(midiAccumulator));
+    // Sensibilité accrue pour capter les notes faibles (septièmes/neuvièmes)
     const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.30);
+    
+    // Identification de la note la plus basse pour prioriser l'inversion correcte (ex: G6 vs Em7)
+    const lowestMIDI = Math.min(...filteredMidis);
+    const lowestPC = lowestMIDI % 12;
+
     const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
-    const foundChords = analyzeHarmonics(pcs);
+    const foundChords = analyzeHarmonics(pcs, lowestPC);
     const verdictTextEl = document.getElementById('verdict-text');
     const verdictBlockEl = document.getElementById('verdict-block');
 
@@ -320,7 +324,7 @@ function finish() {
     const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").toLowerCase();
     const targetClean = simplify(targetChordName);
 
-    // On cherche si l'accord cible est parmi les meilleurs résultats (Score Subset)
+    // On cherche l'accord cible avec le meilleur score
     const bestScore = foundChords[0].score;
     const matchingTarget = foundChords.find(c => c.score === bestScore && simplify(c.name) === targetClean);
 
@@ -328,7 +332,8 @@ function finish() {
     const win = simplify(best.name) === targetClean;
 
     document.getElementById('detected-name').innerHTML = formatChordDisplay(best.name);
-    document.getElementById('confidence-score').innerText = Math.round(best.score * 100);
+    // On affiche la confiance basée sur la couverture réelle (0-100%)
+    document.getElementById('confidence-score').innerText = Math.round(best.coverage * 100);
 
     if (win) {
         verdictTextEl.innerText = "That's right !";
@@ -341,17 +346,30 @@ function finish() {
     }
 }
 
-function analyzeHarmonics(pcs) {
+function analyzeHarmonics(pcs, lowestPC) {
     let results = [];
     for (let root = 0; root < 12; root++) {
         const relativeIntervals = pcs.map(pc => (pc - root + 12) % 12);
         for (let [type, structure] of Object.entries(CHORD_STRUCTURES)) {
+            // Logique issubset (Python style)
             if (structure.every(interval => relativeIntervals.includes(interval))) {
                 const coverage = structure.length / pcs.length;
-                results.push({ name: NOTES[root] + type, score: coverage });
+                
+                // --- LOGIQUE DE POINTAGE ---
+                // 1. Bonus de complexité : Un accord de 5 notes (m9) bat un accord de 3 notes (m)
+                const complexityBonus = structure.length * 10;
+                // 2. Bonus de Basse : Si la fondamentale est la note la plus basse (ex: G pour G6)
+                const bassBonus = (root === lowestPC) ? 25 : 0;
+                
+                results.push({ 
+                    name: NOTES[root] + type, 
+                    score: coverage + complexityBonus + bassBonus,
+                    coverage: coverage // Pour affichage utilisateur
+                });
             }
         }
     }
+    // Tri par score total décroissant
     return results.sort((a, b) => b.score - a.score);
 }
 
@@ -383,4 +401,3 @@ getRandomChord();
 </script>
 </body>
 </html>
-
