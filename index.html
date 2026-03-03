@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chords Training :)</title>
+<title>Chords Training</title>
 <style>
     :root {
         --royal-blue: #1e3799;
@@ -145,6 +145,19 @@
     .spacer-ghost { width: calc(1.8em + 2px); flex-shrink: 0; visibility: hidden; }
     .verdict-block { padding: 20px 40px; border-radius: 15px; background: rgba(255, 255, 255, 0.1); width: 100%; max-width: 450px; text-align: center; }
     .verdict { font-size: 2.8em; font-weight: 900; margin: 10px 0; }
+
+    /* Grille de notes demandée */
+    .note-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 15px; }
+    .note-square {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 8px;
+        padding: 5px 10px;
+        font-weight: bold;
+        font-size: 0.9em;
+        min-width: 40px;
+    }
+
     .hidden { display: none !important; }
     .invisible { opacity: 0 !important; pointer-events: none !important; cursor: default !important; }
 </style>
@@ -182,6 +195,7 @@
         <div id="result-zone" class="result-area hidden">
             <div class="verdict-block" id="verdict-block">
                 <div style="font-size: 1.2em;">I heard : <b id="detected-name">-</b> (<span id="confidence-score">0</span>%)</div>
+                <div id="note-grid" class="note-grid hidden"></div>
                 <div id="verdict-text" class="verdict"></div>
             </div>
             <div style="display: flex; gap: 20px;" class="btn-group-mobile">
@@ -237,6 +251,7 @@ function resetUI(withNewChord = false) {
     document.getElementById('container-analyzing').classList.add('hidden');
     document.getElementById('wave-ui').classList.remove('active');
     document.getElementById('btn-refresh').classList.remove('invisible');
+    document.getElementById('note-grid').classList.add('hidden');
     if(animationId) cancelAnimationFrame(animationId);
     if(stream) stream.getTracks().forEach(t => t.stop());
 }
@@ -291,7 +306,6 @@ async function startAnalysis() {
     } catch (e) { resetUI(); }
 }
 
-// Fonction pour extraire la fondamentale d'un nom d'accord (ex: "G7" -> "G")
 function getRootFromChordName(name) {
     const match = name.match(/^[A-G](#|b|&flat;|&#9839;)?/);
     return match ? match[0] : "";
@@ -299,37 +313,26 @@ function getRootFromChordName(name) {
 
 function analyzeHarmonics(pcs, targetRoot) {
     if (!pcs || pcs.length === 0) return [];
-
     let results = [];
-
-    // On nettoie la racine cible pour la comparaison (ex: "G&#9839;" -> "G#")
     const cleanTargetRoot = targetRoot.replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
 
     for (let root = 0; root < 12; root++) {
-        // On nettoie la racine actuelle
         const rootNameRaw = NOTES[root].replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
-
         const relativeIntervals = pcs.map(pc => (pc - root + 12) % 12);
 
         for (let [type, structure] of Object.entries(CHORD_STRUCTURES)) {
-            // Vérifie si l'accord est contenu dans les notes jouées
             if (structure.every(interval => relativeIntervals.includes(interval))) {
 
-                // Calcul de la confiance (0.0 à 1.0)
-                let confidence = structure.length / pcs.length;
+                // RÈGLE ANTI-MAJ7 : Vérifie si des notes étrangères sont présentes
+                const unintended = relativeIntervals.filter(i => !structure.includes(i)).length;
 
-                // Système de points interne pour le tri
-                // On multiplie par 1000 pour transformer en entiers
+                let confidence = structure.length / pcs.length;
                 let priorityScore = confidence * 1000;
 
-                // --- LA RÈGLE D'OR ---
-                // Si la dominante de cet accord est la même que celle demandée,
-                // on lui donne un bonus massif pour qu'il passe devant les inversions relatives (G6 vs Em7)
-                if (rootNameRaw === cleanTargetRoot) {
-                    priorityScore += 500;
-                }
+                // Pénalité pour les notes en trop (évite maj7 fantôme)
+                priorityScore -= (unintended * 150);
 
-                // Bonus de complexité (priorise les accords à 4 notes sur 3 notes si tout est parfait)
+                if (rootNameRaw === cleanTargetRoot) priorityScore += 500;
                 priorityScore += (structure.length * 10);
 
                 results.push({
@@ -340,8 +343,6 @@ function analyzeHarmonics(pcs, targetRoot) {
             }
         }
     }
-
-    // Tri décroissant sur le score de priorité
     return results.sort((a, b) => b.score - a.score);
 }
 
@@ -360,34 +361,39 @@ function finish() {
     }
 
     const maxWeight = Math.max(...Object.values(midiAccumulator));
-    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.45);
+    const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.35).sort((a,b) => a-b);
     const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
-    // Extraction propre de la racine cible
     const targetRoot = getRootFromChordName(targetChordName);
-
-    // Lancement de l'analyse
     const foundChords = analyzeHarmonics(pcs, targetRoot);
 
     const verdictTextEl = document.getElementById('verdict-text');
     const verdictBlockEl = document.getElementById('verdict-block');
+    const noteGrid = document.getElementById('note-grid');
 
-    if (foundChords.length === 0) {
+    // SI RIEN N'EST TROUVÉ : Affiche "idk" + les carrés de notes
+    if (foundChords.length === 0 || foundChords[0].score < 200) {
         document.getElementById('detected-name').innerHTML = "idk";
         document.getElementById('confidence-score').innerText = "0";
+
+        noteGrid.classList.remove('hidden');
+        noteGrid.innerHTML = filteredMidis.map(m => {
+            const n = NOTES[m%12].replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
+            const oct = Math.floor(m/12)-1;
+            return `<div class="note-square">${n}${oct}</div>`;
+        }).join('');
+
         verdictTextEl.innerText = "Try again";
+        verdictBlockEl.style.background = 'rgba(255, 255, 255, 0.1)';
         return;
     }
 
-    // Le meilleur résultat après application des règles de priorité
     const best = foundChords[0];
-
     const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").toLowerCase();
     const win = simplify(best.name) === simplify(targetChordName);
 
+    noteGrid.classList.add('hidden');
     document.getElementById('detected-name').innerHTML = formatChordDisplay(best.name);
-
-    // Affichage de la confiance réelle (pas du score de priorité interne)
     document.getElementById('confidence-score').innerText = Math.round(best.displayConf * 100);
 
     if (win) {
@@ -429,4 +435,3 @@ getRandomChord();
 </script>
 </body>
 </html>
-
