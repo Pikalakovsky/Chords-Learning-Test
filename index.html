@@ -362,16 +362,24 @@ function analyzeHarmonics(pcs, targetRoot) {
         }
     }
 
-    // NOUVELLE LOGIQUE DE TRI : Confiance d'abord, tonique seulement en cas d'égalité
+    // NOUVELLE LOGIQUE DE TRI : Confiance > Tonique > Correspondance exacte
     return results.sort((a, b) => {
-        // 1. Priorité à la confiance la plus forte (ex: 80% bat 60%)
+        // 1. Priorité à la confiance la plus forte
         if (Math.abs(b.confidence - a.confidence) > 0.001) {
             return b.confidence - a.confidence;
         }
-        // 2. Égalité ? On regarde si c'est la tonique attendue (D pour Dm/D7)
-        const aMatch = (a.rootNameRaw === cleanTargetRoot);
-        const bMatch = (b.rootNameRaw === cleanTargetRoot);
-        if (aMatch !== bMatch) return bMatch ? 1 : -1;
+
+        // 2. Égalité ? On regarde si c'est la tonique attendue
+        const aRootMatch = (a.rootNameRaw === cleanTargetRoot);
+        const bRootMatch = (b.rootNameRaw === cleanTargetRoot);
+        if (aRootMatch !== bRootMatch) return bRootMatch ? 1 : -1;
+
+        // 3. Toujours égalité ? On vérifie si le nom complet correspond à la cible
+        // Cela permet de départager C et Cadd2 si on attendait un C.
+        const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
+        const aFullMatch = (simplify(a.name) === targetChordName);
+        const bFullMatch = (simplify(b.name) === targetChordName);
+        if (aFullMatch !== bFullMatch) return bFullMatch ? 1 : -1;
 
         return 0;
     });
