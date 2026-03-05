@@ -339,48 +339,55 @@ function getRootFromChordName(name) {
     return match ? match[0] : "";
 }
 
-function analyzeHarmonics(pcs, targetRoot) {
+function analyzeHarmonics(pcs, targetRoot, lowestPC) {
     if (!pcs || pcs.length === 0) return [];
     let results = [];
+
+    // On nettoie la racine de l'accord recherché pour la comparaison (ex: G# ou Ab)
     const cleanTargetRoot = targetRoot.replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
 
+    // Étape 1 : Identifier tous les accords mathématiquement possibles
     for (let root = 0; root < 12; root++) {
         const rootNameRaw = NOTES[root].replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
         const relativeIntervals = pcs.map(pc => (pc - root + 12) % 12);
 
         for (let [type, structure] of Object.entries(CHORD_STRUCTURES)) {
+            // Si toutes les notes de la structure sont présentes dans les notes jouées
             if (structure.every(interval => relativeIntervals.includes(interval))) {
-                // Confiance réelle basée sur le nombre de notes trouvées
                 let confidence = structure.length / pcs.length;
 
                 results.push({
                     name: NOTES[root] + type,
-                    rootNameRaw: rootNameRaw,
+                    rootPC: root,            // Index MIDI (0-11)
+                    rootNameRaw: rootNameRaw, // Nom (ex: "F#")
                     confidence: confidence
                 });
             }
         }
     }
 
-    // NOUVELLE LOGIQUE DE TRI : Confiance > Tonique > Correspondance exacte
+    // Étape 2 : Appliquer TES règles de priorité pour le tri
     return results.sort((a, b) => {
-        // 1. Priorité à la confiance la plus forte
+        // PRIORITÉ 1 : Le plus haut score de confiance
         if (Math.abs(b.confidence - a.confidence) > 0.001) {
             return b.confidence - a.confidence;
         }
 
-        // 2. Égalité ? On regarde si c'est la tonique attendue
-        const aRootMatch = (a.rootNameRaw === cleanTargetRoot);
-        const bRootMatch = (b.rootNameRaw === cleanTargetRoot);
-        if (aRootMatch !== bRootMatch) return bRootMatch ? 1 : -1;
+        // PRIORITÉ 2 : Si égalité, est-ce que l'un a la fondamentale de l'accord RECHERCHÉ ?
+        const aMatchesTarget = (a.rootNameRaw === cleanTargetRoot);
+        const bMatchesTarget = (b.rootNameRaw === cleanTargetRoot);
+        if (aMatchesTarget !== bMatchesTarget) {
+            return aMatchesTarget ? -1 : 1; // On place celui qui match en premier (-1)
+        }
 
-        // 3. Toujours égalité ? On vérifie si le nom complet correspond à la cible
-        // Cela permet de départager C et Cadd2 si on attendait un C.
-        const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b");
-        const aFullMatch = (simplify(a.name) === targetChordName);
-        const bFullMatch = (simplify(b.name) === targetChordName);
-        if (aFullMatch !== bFullMatch) return bFullMatch ? 1 : -1;
+        // PRIORITÉ 3 : Si aucun ne match la cible, celui dont la fondamentale est la BASSE JOUÉE
+        const aMatchesLowest = (a.rootPC === lowestPC);
+        const bMatchesLowest = (b.rootPC === lowestPC);
+        if (aMatchesLowest !== bMatchesLowest) {
+            return aMatchesLowest ? -1 : 1;
+        }
 
+        // PRIORITÉ 4 : Si toujours égalité, l'ordre naturel (le premier trouvé)
         return 0;
     });
 }
@@ -400,11 +407,19 @@ function finish() {
     }
 
     const maxWeight = Math.max(...Object.values(midiAccumulator));
+    // On trie les notes par hauteur (du plus grave au plus aigu)
     const filteredMidis = midis.filter(m => midiAccumulator[m] > maxWeight * 0.35).sort((a,b) => a-b);
+
+    // --- ÉTAPE CRUCIALE : On récupère la note la plus basse ---
+    const lowestPC = filteredMidis.length > 0 ? (filteredMidis[0] % 12) : null;
+
     const pcs = [...new Set(filteredMidis.map(m => m % 12))];
 
+    // On récupère la racine du nom de l'accord affiché à l'écran
     const targetRoot = getRootFromChordName(targetChordName);
-    const foundChords = analyzeHarmonics(pcs, targetRoot);
+
+    // On lance l'analyse avec les 3 paramètres
+    const foundChords = analyzeHarmonics(pcs, targetRoot, lowestPC);
 
     const verdictTextEl = document.getElementById('verdict-text');
     const verdictBlockEl = document.getElementById('verdict-block');
@@ -420,10 +435,12 @@ function finish() {
             return `<div class="note-square">${n}${oct}</div>`;
         }).join('');
         verdictTextEl.innerText = "Try again";
+        verdictTextEl.style.color = 'rgba(240, 240, 255, 1.0)';
         verdictBlockEl.style.background = 'rgba(255, 255, 255, 0.1)';
         return;
     }
 
+    // L'accord "Best" est maintenant celui trié selon tes 3 priorités
     const best = foundChords[0];
     const simplify = (s) => s.replace(/&#9839;/g, "#").replace(/&flat;/g, "b").toLowerCase();
     const win = simplify(best.name) === simplify(targetChordName);
