@@ -213,22 +213,34 @@ const CHORD_STRUCTURES = {
     // --- ACCORDS DE BASE ---
     "": [0, 4, 7],
     "m": [0, 3, 7],
+    "5": [0, 7],                      // Power chord (no 3rd)
+    "(no5)": [0, 4],                 // Majeur sans quinte
+    "m(no5)": [0, 3],                // Mineur sans quinte
+    
+    // --- SEPTIÈMES ---
     "7": [0, 4, 7, 10],
+    "7(no5)": [0, 4, 10],            // Très fréquent en jazz
     "Maj7": [0, 4, 7, 11],
+    "Maj7(no5)": [0, 4, 11],
     "m7": [0, 3, 7, 10],
+    "m7(no5)": [0, 3, 10],
 
     // --- SIXTES & SUSPENDUS ---
     "6": [0, 4, 7, 9],
+    "6(no5)": [0, 4, 9],
     "m6": [0, 3, 7, 9],
     "sus2": [0, 2, 7],
     "sus4": [0, 5, 7],
     "7sus4": [0, 5, 7, 10],
 
-    // --- EXTENSIONS (9, 11, 13) ---
+    // --- EXTENSIONS (Souvent jouées sans quinte) ---
     "add9": [0, 4, 7, 2],
     "9": [0, 4, 7, 10, 2],
+    "9(no5)": [0, 4, 10, 2],
     "Maj9": [0, 4, 7, 11, 2],
+    "Maj9(no5)": [0, 4, 11, 2],
     "m9": [0, 3, 7, 10, 2],
+    "m9(no5)": [0, 3, 10, 2],
     "11": [0, 4, 7, 10, 2, 5],
     "m11": [0, 3, 7, 10, 2, 5],
     "13": [0, 4, 7, 10, 2, 5, 9],
@@ -236,20 +248,20 @@ const CHORD_STRUCTURES = {
 
     // --- LES ALTÉRÉS UTILES ---
     "7&flat;5": [0, 4, 6, 10],
-    "m7&flat;5": [0, 3, 6, 10],      // Incontournable (demi-diminué)
+    "m7&flat;5": [0, 3, 6, 10],
     "7&flat;9": [0, 4, 7, 10, 1],
-    "7&#9839;9": [0, 4, 7, 10, 3],    // L'accord "Hendrix"
-    "7&#9839;11": [0, 4, 7, 10, 6],   // Très utilisé en jazz/fusion
-    "7&flat;13": [0, 4, 7, 10, 8],   // Tension classique vers un accord mineur
+    "7&#9839;9": [0, 4, 7, 10, 3],
+    "7&#9839;11": [0, 4, 7, 10, 6],
+    "7&flat;13": [0, 4, 7, 10, 8],
     "13&flat;9": [0, 4, 7, 10, 1, 9],
-    "Maj7&#9839;11": [0, 4, 7, 11, 6], // Le son "spatial" (Lydien)
+    "Maj7&#9839;11": [0, 4, 7, 11, 6],
 
     // --- DIMINUÉS & AUGMENTÉS ---
     "dim": [0, 3, 6],
     "dim7": [0, 3, 6, 9],
-    "dim9": [0, 3, 6, 9, 2],          // Rare mais superbe (Jazz)
+    "dim9": [0, 3, 6, 9, 2],
     "aug": [0, 4, 8],
-    "aug7": [0, 4, 8, 10]             // Plus complet que le simple "aug"
+    "aug7": [0, 4, 8, 10]
 };
 
 let targetChordName = "";
